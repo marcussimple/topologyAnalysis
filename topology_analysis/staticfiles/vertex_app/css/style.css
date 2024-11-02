@@ -1,0 +1,49 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+#control-panel {
+    width: 250px;  /* Fixed width for left panel */
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+}
+
+#map {
+    flex: 1;  /* Takes remaining space */
+    background-color: #e9ecef; /* Temporary color to see the map container */
+}
+
+/* Style the buttons */
+button {
+    padding: 8px 16px;
+    margin: 5px 0;
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+h2 {
+    margin-bottom: 20px;
+}

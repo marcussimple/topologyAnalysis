@@ -1,0 +1,34 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vertex Visualization</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Mapbox CSS -->
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
+    <!-- Your CSS -->
+    <link rel="stylesheet" href="{% static 'vertex_app/css/style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <div id="control-panel">
+            <h2>Query Panel</h2>
+            <div class="controls">
+                <button onclick="testDatabase()">Test Database Connection</button>
+                <button onclick="createTestData()">Create Test Data</button>
+                <button onclick="showVertices()">Show Vertices</button>
+                <button onclick="resetMap()">Reset Map</button>
+            </div>
+            <div id="db-status"></div>
+            <div id="vertex-list"></div>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <!-- Mapbox JS -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+    <!-- Your JS -->
+    <script src="{% static 'vertex_app/js/map.js' %}"></script>
+</body>
+</html>
