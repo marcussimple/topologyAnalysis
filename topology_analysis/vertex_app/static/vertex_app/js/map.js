@@ -1,155 +1,122 @@
 // Global variables
 let map;
 let markers = [];
+let thalwegLines = [];    
+let showingThalwegs = false;  
 
 // Initialize map when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize mapbox
-    mapboxgl.accessToken = 'pk.eyJ1IjoibWFyY3Vzc2ltcGxlIiwiYSI6ImNseTNvb3hobzA5cWsybHBvenRmdHNxcmwifQ.ZQAMdmO7CT--DCeE1pLF_g'; // Make sure to replace with your token
-
+    mapboxgl.accessToken = 'pk.eyJ1IjoibWFyY3Vzc2ltcGxlIiwiYSI6ImNseTNvb3hobzA5cWsybHBvenRmdHNxcmwifQ.ZQAMdmO7CT--DCeE1pLF_g';
+ 
     map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/streets-v11',
         center: [-95.7129, 37.0902], // Center of US
         zoom: 3
     });
-
+ 
     // Add navigation controls
     map.addControl(new mapboxgl.NavigationControl());
-
+ 
     // Wait for map to load before allowing interactions
     map.on('load', () => {
         console.log('Map loaded successfully');
     });
 });
 
-
 async function showVertices() {
     console.log('Fetching vertices...');
-    const vertexListDiv = document.getElementById('vertex-list');
-    vertexListDiv.innerHTML = 'Loading vertices...';
     
     try {
+        console.log('Making request to /get-vertices/');
         const response = await fetch('/get-vertices/');
+        console.log('Response received:', response);
+        
         const data = await response.json();
+        console.log('Data received:', data);
         
         if (data.status === 'success') {
+            console.log('Processing vertices:', data.vertices);
+            
             // Clear existing markers
-            if (window.currentMarkers) {
-                window.currentMarkers.forEach(marker => marker.remove());
-            }
-            window.currentMarkers = [];
+            markers.forEach(marker => marker.remove());
+            markers = [];
             
-            // Montmorency Forest center coordinates
-            const centerPoint = {
-                longitude: -71.1500,
-                latitude: 47.3167
-            };
-            
-            // Find the range of x and y coordinates
-            const xValues = data.vertices.map(v => parseFloat(v.x));
-            const yValues = data.vertices.map(v => parseFloat(v.y));
-            
-            // Debug Z values
-            const zValues = data.vertices.map(v => parseFloat(v.z)).filter(z => !isNaN(z));
-            const minZ = Math.min(...zValues);
-            const maxZ = Math.max(...zValues);
+            // Find min and max elevation for color scaling
+            const elevations = data.vertices.map(v => parseFloat(v.elevation)).filter(z => !isNaN(z));
+            const minZ = Math.min(...elevations);
+            const maxZ = Math.max(...elevations);
             const range = maxZ - minZ;
             const quartile = range / 4;
 
-            console.log('Z-value analysis:');
-            console.log('Min Z:', minZ);
-            console.log('Max Z:', maxZ);
-            console.log('Range:', range);
-            console.log('Quartile size:', quartile);
+            console.log('Elevation analysis:', {
+                minZ,
+                maxZ,
+                range,
+                quartile
+            });
             
-            const xMin = Math.min(...xValues);
-            const xMax = Math.max(...xValues);
-            const yMin = Math.min(...yValues);
-            const yMax = Math.max(...yValues);
-            
-            // Calculate center of the vertex data
-            const xCenter = (xMax + xMin) / 2;
-            const yCenter = (yMax + yMin) / 2;
-            
-            const scaleFactor = 0.0001;
-
-            data.vertices.forEach(vertex => {
-                const relativeX = (vertex.x - xCenter) * scaleFactor;
-                const relativeY = (vertex.y - yCenter) * scaleFactor;
+            // Create markers
+            data.vertices.forEach((vertex, index) => {
+                console.log(`Processing vertex ${index}:`, vertex);
                 
-                const longitude = centerPoint.longitude + relativeX;
-                const latitude = centerPoint.latitude + relativeY;
-
-                // Create marker with color based on Z
                 const el = document.createElement('div');
                 el.className = 'marker';
+                el.setAttribute('data-vertex-id', vertex.id);
                 
-                const zValue = parseFloat(vertex.z);
-                console.log(`Vertex ${vertex.id} - Z value: ${zValue}, Percentage: ${((zValue - minZ) / (maxZ - minZ)) * 100}%`);
-                
-                if (!isNaN(zValue)) {
-                    const color = getColorForZ(zValue, minZ, maxZ);
-                    console.log(`Vertex ${vertex.id} - Color assigned: ${color}`);
+                const elevation = parseFloat(vertex.elevation);
+                if (!isNaN(elevation)) {
+                    const color = getColorForZ(elevation, minZ, maxZ);
+                    console.log(`Vertex ${vertex.id} color:`, color);
                     el.style.backgroundColor = color;
                 } else {
-                    el.style.backgroundColor = '#FF0000';  // Default red for no Z value
+                    el.style.backgroundColor = '#FF0000';
                 }
                 
-                el.style.width = '8px';      // Set size
-                el.style.height = '8px';     // Set size
+                el.style.width = '8px';
+                el.style.height = '8px';
                 el.style.borderRadius = '50%';
                 el.style.border = '2px solid white';
                 
+                console.log(`Creating marker at [${vertex.longitude}, ${vertex.latitude}]`);
                 const marker = new mapboxgl.Marker(el)
-                    .setLngLat([longitude, latitude])
+                    .setLngLat([vertex.longitude, vertex.latitude])
                     .setPopup(new mapboxgl.Popup({ offset: 25 })
                         .setHTML(`
                             <h3>Vertex ${vertex.id}</h3>
-                            <p>Original X: ${vertex.x}</p>
-                            <p>Original Y: ${vertex.y}</p>
-                            <p>Z: ${vertex.z || 'N/A'}</p>
+                            <p>Elevation: ${vertex.elevation ? vertex.elevation.toFixed(2) + 'm' : 'N/A'}</p>
+                            <p>Position: [${vertex.longitude.toFixed(6)}, ${vertex.latitude.toFixed(6)}]</p>
                         `))
                     .addTo(map);
                 
-                window.currentMarkers.push(marker);
+                marker.vertexId = vertex.id;
+                markers.push(marker);
             });
             
-            // Add legend
+            // Add elevation legend
             addLegend(minZ, maxZ, quartile);
             
-            map.flyTo({
-                center: [centerPoint.longitude, centerPoint.latitude],
-                zoom: 12
-            });
-
-            vertexListDiv.innerHTML = `
-                <h3>Found ${data.vertices.length} vertices:</h3>
-                <ul style="list-style: none; padding: 0;">
-                    ${data.vertices.map(v => `
-                        <li style="padding: 5px 0; border-bottom: 1px solid #eee;">
-                            Vertex ${v.id}<br>
-                            <small>X: ${v.x}, Y: ${v.y}</small>
-                            ${v.z ? `<br><small>Z: ${v.z}</small>` : ''}
-                        </li>
-                    `).join('')}
-                </ul>
-            `;
-
+            // Fit map to show all points
+            if (markers.length > 0) {
+                console.log(`Fitting map to ${markers.length} markers`);
+                const bounds = new mapboxgl.LngLatBounds();
+                markers.forEach(marker => {
+                    bounds.extend(marker.getLngLat());
+                });
+                map.fitBounds(bounds, {
+                    padding: 50,
+                    duration: 1000
+                });
+            }
+            
+            console.log(`Added ${markers.length} markers to the map`);
+            
         } else {
-            vertexListDiv.innerHTML = `
-                <p style="color: red;">
-                    Error: ${data.message}
-                </p>
-            `;
+            console.error('Error in response:', data.message);
         }
     } catch (error) {
         console.error('Error loading vertices:', error);
-        vertexListDiv.innerHTML = `
-            <p style="color: red;">
-                Error loading vertices: ${error.message}
-            </p>
-        `;
     }
 }
 
@@ -187,52 +154,6 @@ function addLegend(minZ, maxZ, quartile) {
     document.getElementById('map').appendChild(legend);
 }
 
-
-// Helper function to scale values from one range to another
-function scaleValue(value, fromMin, fromMax, toMin, toMax) {
-    // Convert to number if it's a string
-    value = parseFloat(value);
-    
-    // Check for invalid input
-    if (isNaN(value) || fromMax === fromMin) {
-        return 0;
-    }
-    
-    const scale = (toMax - toMin) / (fromMax - fromMin);
-    return toMin + ((value - fromMin) * scale);
-}
-
-async function createTestData() {
-    const statusDiv = document.getElementById('db-status');
-    statusDiv.innerHTML = 'Creating test data...';
-    
-    try {
-        const response = await fetch('/create-test-data/');
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            statusDiv.innerHTML = `
-                <p style="color: green;">
-                    ✓ ${data.message}<br>
-                    Click "Show Vertices" to see the data on the map
-                </p>
-            `;
-        } else {
-            statusDiv.innerHTML = `
-                <p style="color: red;">
-                    ✗ ${data.message}
-                </p>
-            `;
-        }
-    } catch (error) {
-        statusDiv.innerHTML = `
-            <p style="color: red;">
-                ✗ Error creating test data: ${error.message}
-            </p>
-        `;
-    }
-}
-
 function resetMap() {
     if (map) {
         map.setZoom(3);
@@ -240,7 +161,7 @@ function resetMap() {
     }
 }
 
-// Add some CSS to make the markers visible
+// Add CSS styles
 const style = document.createElement('style');
 style.textContent = `
     .marker {

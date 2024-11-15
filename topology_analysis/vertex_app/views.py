@@ -2,7 +2,9 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from neomodel import db
 from django.views.decorators.csrf import csrf_exempt
+from pyproj import Transformer
 import json
+import os
 
 def index(request):
     """
@@ -10,33 +12,40 @@ def index(request):
     """
     return render(request, 'vertex_app/index.html')
 
-def test_db_connection(request):
+
+def transform_coordinates(x, y, z):
     """
-    Test Neo4j database connection
+    Transform local coordinates to WGS84 using known reference point
     """
-    try:
-        query = "MATCH (n) RETURN count(n) as count"
-        results, _ = db.cypher_query(query)
-        count = results[0][0]
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Connected to Neo4j successfully',
-            'node_count': count
-        })
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Database connection error: {str(e)}'
-        }, status=500)
+    # Point de référence de la Forêt Montmorency
+    ref_point = {
+        'x': 52500,  # Centre approximatif en X
+        'y': 35600,  # Centre approximatif en Y
+        'lon': -71.1520,
+        'lat': 47.3167
+    }
     
+    try:
+        # Calcul des décalages relatifs
+        dx = (x - ref_point['x']) * 0.00001
+        dy = (y - ref_point['y']) * 0.00001
+        
+        # Conversion en latitude/longitude
+        lon = ref_point['lon'] + dx
+        lat = ref_point['lat'] + dy
+        
+        return {
+            'longitude': lon,
+            'latitude': lat,
+            'elevation': z
+        }
+    except Exception as e:
+        print(f"Erreur de transformation: {str(e)}")
+        return None
+
 
 def get_all_vertices(request):
-    """
-    Get all vertices with their coordinates (limited to 30)
-    """
     try:
-        # Query to get vertices
         query = """
         MATCH (n:Vertex)
         RETURN 
@@ -44,25 +53,36 @@ def get_all_vertices(request):
             n.x as x,
             n.y as y,
             n.z as z
-            LIMIT 1500
+            LIMIT 500  // Limitons à 5 points pour le debug
         """
         
         results, _ = db.cypher_query(query)
-        
-        # Print raw results for debugging
-        print("Raw query results:")
+        print("\nRaw data from database:")
         for row in results:
             print(f"ID: {row[0]}, X: {row[1]}, Y: {row[2]}, Z: {row[3]}")
+            
+        vertices = []
+        for row in results:
+            if row[0] is not None:
+                x = float(row[1]) if row[1] is not None else None
+                y = float(row[2]) if row[2] is not None else None
+                z = float(row[3]) if row[3] is not None else None
+                
+                print(f"\nProcessing vertex {row[0]}:")
+                print(f"Original coordinates: X={x}, Y={y}, Z={z}")
+                
+                coords = transform_coordinates(x, y, z)
+                print(f"Transformed coordinates: {coords}")
+                
+                if coords:
+                    vertices.append({
+                        'id': row[0],
+                        'longitude': coords['longitude'],
+                        'latitude': coords['latitude'],
+                        'elevation': coords['elevation']
+                    })
         
-        vertices = [
-            {
-                'id': row[0],
-                'x': float(row[1]) if row[1] is not None else None,
-                'y': float(row[2]) if row[2] is not None else None,
-                'z': float(row[3]) if row[3] is not None else None
-            }
-            for row in results if row[0] is not None
-        ]
+        print(f"\nProcessed vertices: {vertices}")
         
         return JsonResponse({
             'status': 'success',
@@ -78,6 +98,67 @@ def get_all_vertices(request):
 
 
 @csrf_exempt
+def get_thalwegs(request):
+    """
+    Get thalweg paths with transformed coordinates
+    """
+    try:
+        data = json.loads(request.body)
+        vertex_ids = data.get('vertexIds', [])
+        
+        query = """
+        MATCH path = (s:Vertex)-[r:THALWEG_PATH*]->(v:Vertex)
+        WHERE s.id IN $vertex_ids
+        AND NOT (v)-[:THALWEG_PATH]->()
+        WITH path, relationships(path) as rels, nodes(path) as nodes
+        RETURN {
+            thalweg_index: rels[0].thalweg_index,
+            vertices: [n IN nodes | {
+                id: n.id,
+                x: n.x,
+                y: n.y,
+                z: n.z
+            }]
+        } as thalweg
+        """
+        
+        results = db.cypher_query(query, {'vertex_ids': vertex_ids})[0]
+        
+        # Transformer les coordonnées pour chaque thalweg
+        transformed_thalwegs = []
+        for thalweg in results:
+            transformed_vertices = []
+            for vertex in thalweg[0]['vertices']:
+                coords = transform_coordinates(
+                    float(vertex['x']),
+                    float(vertex['y']),
+                    float(vertex['z'])
+                )
+                if coords:
+                    transformed_vertices.append({
+                        'id': vertex['id'],
+                        'longitude': coords['longitude'],
+                        'latitude': coords['latitude'],
+                        'elevation': coords['elevation']
+                    })
+            
+            transformed_thalwegs.append({
+                'thalweg_index': thalweg[0]['thalweg_index'],
+                'vertices': transformed_vertices
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'thalwegs': transformed_thalwegs
+        })
+        
+    except Exception as e:
+        print(f"Error in get_thalwegs: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
 def execute_query(request):
     """
     Execute a custom Cypher query
@@ -126,41 +207,3 @@ def execute_query(request):
         'status': 'error',
         'message': 'Only POST method is allowed'
     }, status=405)
-
-@csrf_exempt
-def create_test_data(request):
-    """
-    Create test vertices in the database
-    """
-    try:
-        # Clear existing data (optional)
-        clear_query = "MATCH (n) DETACH DELETE n"
-        db.cypher_query(clear_query)
-        
-        # Create test vertices with coordinates
-        create_query = """
-        CREATE (n1:Vertex {name: 'Location1', latitude: 40.7128, longitude: -74.0060})  // New York
-        CREATE (n2:Vertex {name: 'Location2', latitude: 34.0522, longitude: -118.2437}) // Los Angeles
-        CREATE (n3:Vertex {name: 'Location3', latitude: 41.8781, longitude: -87.6298})  // Chicago
-        CREATE (n4:Vertex {name: 'Location4', latitude: 29.7604, longitude: -95.3698})  // Houston
-        CREATE (n5:Vertex {name: 'Location5', latitude: 39.9526, longitude: -75.1652})  // Philadelphia
-        
-        // Create connections between vertices
-        CREATE (n1)-[:CONNECTS_TO]->(n2)
-        CREATE (n2)-[:CONNECTS_TO]->(n3)
-        CREATE (n3)-[:CONNECTS_TO]->(n4)
-        CREATE (n4)-[:CONNECTS_TO]->(n5)
-        CREATE (n5)-[:CONNECTS_TO]->(n1)
-        """
-        
-        db.cypher_query(create_query)
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Test data created successfully'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Error creating test data: {str(e)}'
-        }, status=500)
