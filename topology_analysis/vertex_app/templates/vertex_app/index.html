@@ -1,37 +1,29 @@
 {% load static %}
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Terrain Analysis</title>
-        <!-- Mapbox -->
-        <link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
-        <script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
-        
-        <!-- Notre CSS -->
-        <link rel="stylesheet" href="{% static 'vertex_app/css/style.css' %}" type="text/css">
-    </head>
-    <body>
-        <div class="container">
-            <div id="control-panel" class="control-panel">
-                <header class="panel-header">
-                    <h2>Terrain Analysis</h2>
-                    <p class="panel-description">
-                        Interactive tools for analyzing topographic features and drainage patterns
-                    </p>
-                </header>
-                
-                <div class="controls-section">
-                    <h3>Visualization Tools</h3>
-                    <div class="controls-group">
-                        <button class="control-button" onclick="showVertices()">Show Points</button>
-                        <button class="control-button" onclick="showThalwegs()">Show Thalwegs</button>
-                        <button class="control-button" onclick="resetMap()">Reset View</button>
-                    </div>
-                </div>
+<head>
+    <title>Terrain Analysis</title>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+    <link rel="stylesheet" href="{% static 'vertex_app/css/style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <div id="control-panel">
+            <h2>Terrain Analysis</h2>
+            <p>Interactive tools for analyzing topographic features and drainage patterns</p>
+
+            <h3>Visualization Tools</h3>
+            <div class="controls">
+                <button onclick="showVertices()">Show Points</button>
+                <button onclick="showThalwegs()">Show Thalwegs</button>
+                <button onclick="resetMap()">Reset View</button>
             </div>
-            <div id="map"></div>
         </div>
 
-        <script src="{% static 'vertex_app/js/map.js' %}"></script>
-    </body>
+        <div id="map"></div>
+    </div>
+
+    <script src="{% static 'vertex_app/js/map.js' %}"></script>
+</body>
 </html>

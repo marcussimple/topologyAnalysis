@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render  
 from django.http import JsonResponse
 from neomodel import db
 from django.views.decorators.csrf import csrf_exempt
@@ -53,7 +53,7 @@ def get_all_vertices(request):
             n.x as x,
             n.y as y,
             n.z as z
-            LIMIT 500  // Limitons à 5 points pour le debug
+              // Limitons à 5 points pour le debug
         """
         
         results, _ = db.cypher_query(query)
@@ -99,57 +99,71 @@ def get_all_vertices(request):
 
 @csrf_exempt
 def get_thalwegs(request):
-    """
-    Get thalweg paths with transformed coordinates
-    """
     try:
+        print("\nStarting get_thalwegs function")
         data = json.loads(request.body)
         vertex_ids = data.get('vertexIds', [])
-        
+
+        # D'abord, trouvons les saddle_ids pertinents
         query = """
-        MATCH path = (s:Vertex)-[r:THALWEG_PATH*]->(v:Vertex)
-        WHERE s.id IN $vertex_ids
-        AND NOT (v)-[:THALWEG_PATH]->()
-        WITH path, relationships(path) as rels, nodes(path) as nodes
-        RETURN {
-            thalweg_index: rels[0].thalweg_index,
-            vertices: [n IN nodes | {
-                id: n.id,
-                x: n.x,
-                y: n.y,
-                z: n.z
-            }]
-        } as thalweg
+        MATCH (v:Vertex)-[r:THALWEG_PATH]-()
+        WHERE v.id IN $vertex_ids AND r.saddle_id IS NOT NULL
+        WITH DISTINCT r.saddle_id as saddle_id
+        RETURN saddle_id
         """
-        
-        results = db.cypher_query(query, {'vertex_ids': vertex_ids})[0]
-        
-        # Transformer les coordonnées pour chaque thalweg
-        transformed_thalwegs = []
-        for thalweg in results:
-            transformed_vertices = []
-            for vertex in thalweg[0]['vertices']:
-                coords = transform_coordinates(
-                    float(vertex['x']),
-                    float(vertex['y']),
-                    float(vertex['z'])
-                )
-                if coords:
-                    transformed_vertices.append({
-                        'id': vertex['id'],
-                        'longitude': coords['longitude'],
-                        'latitude': coords['latitude'],
-                        'elevation': coords['elevation']
-                    })
+        saddle_results = db.cypher_query(query, {'vertex_ids': vertex_ids})[0]
+        print(f"Found {len(saddle_results)} saddle points")
+
+        all_thalwegs = []
+        for saddle_row in saddle_results:
+            saddle_id = saddle_row[0]
+            print(f"\nProcessing saddle {saddle_id}")
             
-            transformed_thalwegs.append({
-                'thalweg_index': thalweg[0]['thalweg_index'],
-                'vertices': transformed_vertices
-            })
-        
+            # Utiliser la procédure pour chaque selle
+            thalweg_query = """
+            CALL custom.getThalwegPaths($saddle_id)
+            YIELD saddle_id, thalweg_index, vertex_ids
+            WITH saddle_id, thalweg_index, vertex_ids
+            MATCH (v:Vertex)
+            WHERE v.id IN vertex_ids
+            WITH saddle_id, thalweg_index, vertex_ids,
+                 collect({id: v.id, x: v.x, y: v.y, z: v.z}) as vertices
+            RETURN thalweg_index, vertices
+            """
+            
+            thalweg_results = db.cypher_query(thalweg_query, {'saddle_id': saddle_id})[0]
+            
+            for row in thalweg_results:
+                thalweg_index = row[0]
+                vertices = row[1]
+                
+                # Transformer les coordonnées
+                transformed_vertices = []
+                for vertex in vertices:
+                    coords = transform_coordinates(
+                        float(vertex['x']),
+                        float(vertex['y']),
+                        float(vertex['z'])
+                    )
+                    if coords:
+                        transformed_vertices.append({
+                            'id': vertex['id'],
+                            'longitude': coords['longitude'],
+                            'latitude': coords['latitude'],
+                            'elevation': coords['elevation']
+                        })
+                
+                if len(transformed_vertices) >= 2:
+                    all_thalwegs.append({
+                        'saddle_id': saddle_id,
+                        'thalweg_index': thalweg_index,
+                        'vertices': transformed_vertices
+                    })
+
+        print(f"\nSending {len(all_thalwegs)} thalwegs")
         return JsonResponse({
             'status': 'success',
-            'thalwegs': transformed_thalwegs
+            'thalwegs': all_thalwegs
         })
         
     except Exception as e:
@@ -207,3 +221,4 @@ def execute_query(request):
         'status': 'error',
         'message': 'Only POST method is allowed'
     }, status=405)
+
