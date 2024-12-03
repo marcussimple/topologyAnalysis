@@ -1,26 +1,40 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>Terrain Analysis</title>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse du Terrain</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
     <link rel="stylesheet" href="{% static 'vertex_app/css/style.css' %}">
 </head>
 <body>
     <div class="container">
+        <!-- Panneau de contrôle -->
         <div id="control-panel">
-            <h2>Terrain Analysis</h2>
-            <p>Interactive tools for analyzing topographic features and drainage patterns</p>
+            <h2>Analyse du Terrain</h2>
 
-            <h3>Visualization Tools</h3>
-            <div class="controls">
-                <button onclick="showVertices()">Show Points</button>
-                <button onclick="showThalwegs()">Show Thalwegs</button>
-                <button onclick="resetMap()">Reset View</button>
+            <div class="controls-section">
+                <div class="section-title">Requêtes de validation</div>
+                <div id="btn">A</div>
+                <div id="btn">B</div>
+                <div id="btn">C</div>
+                <div id="btn">D</div>
+                <div id="btn">E</div>
+            </div>
+
+            <div class="controls-section">
+                <div class="section-title">Requêtes d'analyse</div>
+                <div id="btn">V</div>
+                <div id="btn">W</div>
+                <div id="btn">X</div>
+                <div id="btn">Y</div>
+                <div id="btn">Z</div>
             </div>
         </div>
 
+        <!-- Carte -->
         <div id="map"></div>
     </div>
 

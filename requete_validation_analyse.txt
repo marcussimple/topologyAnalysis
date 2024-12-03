@@ -1,0 +1,17 @@
+requete
+plus courte chemain entre 2 points:
+MATCH p = shortestPath((v1:Vertex {id: 26667})-[:CONNECTS*]-(v2:Vertex {id: 2260}))
+RETURN [n in nodes(p) | n.id] as chemin
+
+// Un maximum ne devrait être associé qu'à une seule cellule
+MATCH (c:Cell)
+WITH c.maximum_id as max_id, count(c) as nb
+WHERE nb > 1
+RETURN max_id, nb
+
+//fermeture des cellules 
+// Les points frontières de chaque cellule doivent former une boucle fermée
+MATCH (c:Cell)-[r:CELL_BOUNDARY]->(v:Vertex)
+WITH c, collect(v.id) as points
+WHERE points[0] <> points[-1]
+RETURN c.id as cell_id, points

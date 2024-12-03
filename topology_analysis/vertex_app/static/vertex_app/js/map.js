@@ -1,11 +1,10 @@
-// Global variables
+// Variables globales
 let map;
 let markers = [];
 let thalwegLines = [];    
-let showingThalwegs = false;  
 let mapLoaded = false;
 
-// Fonction utilitaire pour obtenir la couleur du thalweg
+// Fonctions utilitaires
 function getColorForThalweg(index) {
    const colors = {
        0: '#0000FF', // Bleu pour thalweg principal
@@ -17,27 +16,171 @@ function getColorForThalweg(index) {
    return colors[index] || '#000000'; // Noir par défaut
 }
 
-// Initialize map when the page loads
+function getCSRFToken() {
+   const name = 'csrftoken';
+   let cookieValue = null;
+   if (document.cookie && document.cookie !== '') {
+       const cookies = document.cookie.split(';');
+       for (let i = 0; i < cookies.length; i++) {
+           const cookie = cookies[i].trim();
+           if (cookie.substring(0, name.length + 1) === (name + '=')) {
+               cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+               break;
+           }
+       }
+   }
+   return cookieValue;
+}
+
+function getColorForZ(z, minZ, maxZ) {
+   const percentage = (z - minZ) / (maxZ - minZ);
+   console.log(`Z: ${z}, Percentage: ${percentage}`);
+   
+   if (percentage >= 0.75) {
+       return '#FF0000';  // Red for highest points
+   } else if (percentage >= 0.5) {
+       return '#FFA500';  // Orange for high points
+   } else if (percentage >= 0.25) {
+       return '#00FF00';  // Green for medium points
+   } else {
+       return '#0000FF';  // Blue for lowest points
+   }
+}
+
+function addLegend(minZ, maxZ, quartile) {
+   const existingLegend = document.querySelector('.legend');
+   if (existingLegend) {
+       existingLegend.remove();
+   }
+
+   const legend = document.createElement('div');
+   legend.className = 'legend';
+   legend.innerHTML = `
+       <h4>Altitude</h4>
+       <div><span style="background: #FF0000"></span>Highest (${(minZ + quartile * 3).toFixed(1)} - ${maxZ.toFixed(1)})</div>
+       <div><span style="background: #FFA500"></span>High (${(minZ + quartile * 2).toFixed(1)} - ${(minZ + quartile * 3).toFixed(1)})</div>
+       <div><span style="background: #00FF00"></span>Medium (${(minZ + quartile).toFixed(1)} - ${(minZ + quartile * 2).toFixed(1)})</div>
+       <div><span style="background: #0000FF"></span>Lowest (${minZ.toFixed(1)} - ${(minZ + quartile).toFixed(1)})</div>
+   `;
+   
+   document.getElementById('map').appendChild(legend);
+}
+
+function clearThalwegs() {
+    thalwegLines.forEach(line => {
+        if (map.getLayer(line.id)) map.removeLayer(line.id);
+        if (map.getSource(line.sourceId)) map.removeSource(line.sourceId);
+    });
+    thalwegLines = [];
+}
+
+function resetMap() {
+   if (map) {
+       map.setZoom(3);
+       map.setCenter([-95.7129, 37.0902]);
+   }
+}
+
+// Initialisation de la carte
 document.addEventListener('DOMContentLoaded', function() {
-   // Initialize mapbox
-   mapboxgl.accessToken = 'pk.eyJ1IjoibWFyY3Vzc2ltcGxlIiwiYSI6ImNseTNvb3hobzA5cWsybHBvenRmdHNxcmwifQ.ZQAMdmO7CT--DCeE1pLF_g';
+    mapboxgl.accessToken = 'pk.eyJ1IjoibWFyY3Vzc2ltcGxlIiwiYSI6ImNseTNvb3hobzA5cWsybHBvenRmdHNxcmwifQ.ZQAMdmO7CT--DCeE1pLF_g';
+ 
+    map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/marcussimple/cm3a49xlx01gq01qkf9w9d0al',  
+        center: [-95.7129, 37.0902],
+        zoom: 3
+    });
+ 
+    map.addControl(new mapboxgl.NavigationControl());
+ 
+    map.on('load', () => {
+        console.log('Map loaded successfully');
+        mapLoaded = true;
+        
+        // Vérifier toutes les couches disponibles
+        const layers = map.getStyle().layers;
+        console.log('Available layers:', layers.map(layer => layer.id));
+        
+        // Ajouter l'événement de clic sur la couche de vertices
+        map.on('click', 'vertices-0f51qm', async (e) => {
+            console.log('Click event:', e);
+            console.log('Feature properties:', e.features[0].properties);
+            
+            // Utilisez l'ID approprié selon votre structure de données dans Mapbox
+            const vertexId = parseInt(e.features[0].properties.id);
+            console.log('Vertex ID:', vertexId);
+            
+            try {
+                console.log('Sending request for vertex:', vertexId);
+                const response = await fetch('/get-vertex-thalwegs/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ vertex_id: vertexId })
+                });
+ 
+                const data = await response.json();
+                console.log('Response from server:', data);
+ 
+                if (!data.is_saddle) {
+                    new mapboxgl.Popup()
+                        .setLngLat(e.lngLat)
+                        .setHTML(data.message)
+                        .addTo(map);
+                    return;
+                }
+ 
+                // Afficher les thalwegs
+                if (data.status === 'success' && data.thalwegs && data.thalwegs.length > 0) {
+                    data.thalwegs.forEach((thalweg, index) => {
+                        const sourceId = `thalweg-source-${thalwegLines.length + index}`;
+                        const layerId = `thalweg-layer-${thalwegLines.length + index}`;
+ 
+                        map.addSource(sourceId, {
+                            type: 'geojson',
+                            data: {
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'LineString',
+                                    coordinates: thalweg.vertices.map(v => [v.longitude, v.latitude])
+                                }
+                            }
+                        });
+ 
+                        map.addLayer({
+                            id: layerId,
+                            type: 'line',
+                            source: sourceId,
+                            paint: {
+                                'line-color': '#FF0000',
+                                'line-width': 2,
+                                'line-opacity': 0.8
+                            }
+                        });
+ 
+                        thalwegLines.push({ id: layerId, sourceId: sourceId });
+                    });
+                }
+ 
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+ 
+        // Changer le curseur au survol des vertices
+        map.on('mouseenter', 'vertices-0f51qm', () => {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+ 
+        map.on('mouseleave', 'vertices-0f51qm', () => {
+            map.getCanvas().style.cursor = '';
+        });
+    });
+ });
 
-   map = new mapboxgl.Map({
-       container: 'map',
-       style: 'mapbox://styles/marcussimple/cm3a49xlx01gq01qkf9w9d0al',
-       center: [-95.7129, 37.0902], // Center of US
-       zoom: 3
-   });
-
-   // Add navigation controls
-   map.addControl(new mapboxgl.NavigationControl());
-
-   // Wait for map to load before allowing interactions
-   map.on('load', () => {
-       console.log('Map loaded successfully');
-       mapLoaded = true;
-   });
-});
 
 async function showVertices() {
    console.log('Fetching vertices...');
@@ -163,16 +306,13 @@ async function showThalwegs() {
        console.log('Data received:', data);
 
        if (data.status === 'success' && data.thalwegs && data.thalwegs.length > 0) {
-           // Nettoyer les anciennes lignes
            thalwegLines.forEach(line => {
                if (map.getLayer(line.id)) map.removeLayer(line.id);
                if (map.getSource(line.sourceId)) map.removeSource(line.sourceId);
            });
            thalwegLines = [];
 
-           // Ajouter chaque thalweg
            data.thalwegs.forEach((thalweg, index) => {
-               // Vérifier que nous avons au moins 2 points pour former une ligne
                if (thalweg.vertices.length < 2) {
                    console.log('Thalweg has insufficient points:', thalweg);
                    return;
@@ -181,31 +321,26 @@ async function showThalwegs() {
                const sourceId = `thalweg-source-${index}`;
                const layerId = `thalweg-layer-${index}`;
 
-               // Créer un GeoJSON pour le thalweg
-               const geojsonData = {
-                   type: 'Feature',
-                   properties: {
-                       thalweg_index: thalweg.thalweg_index
-                   },
-                   geometry: {
-                       type: 'LineString',
-                       coordinates: thalweg.vertices.map(vertex => [
-                           vertex.longitude,
-                           vertex.latitude
-                       ])
-                   }
-               };
-
-               // Ajouter la source
                map.addSource(sourceId, {
                    type: 'geojson',
-                   data: geojsonData
+                   data: {
+                       type: 'Feature',
+                       properties: {
+                           thalweg_index: thalweg.thalweg_index
+                       },
+                       geometry: {
+                           type: 'LineString',
+                           coordinates: thalweg.vertices.map(vertex => [
+                               vertex.longitude,
+                               vertex.latitude
+                           ])
+                       }
+                   }
                });
 
                const color = getColorForThalweg(thalweg.thalweg_index);
                console.log(`Adding thalweg ${index} with index ${thalweg.thalweg_index} and color ${color}`);
 
-               // Ajouter la couche de ligne
                map.addLayer({
                    id: layerId,
                    type: 'line',
@@ -230,64 +365,7 @@ async function showThalwegs() {
    }
 }
 
-function getCSRFToken() {
-   const name = 'csrftoken';
-   let cookieValue = null;
-   if (document.cookie && document.cookie !== '') {
-       const cookies = document.cookie.split(';');
-       for (let i = 0; i < cookies.length; i++) {
-           const cookie = cookies[i].trim();
-           if (cookie.substring(0, name.length + 1) === (name + '=')) {
-               cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-               break;
-           }
-       }
-   }
-   return cookieValue;
-}
-
-function getColorForZ(z, minZ, maxZ) {
-   const percentage = (z - minZ) / (maxZ - minZ);
-   console.log(`Z: ${z}, Percentage: ${percentage}`);
-   
-   if (percentage >= 0.75) {
-       return '#FF0000';  // Red for highest points (75-100% of height range)
-   } else if (percentage >= 0.5) {
-       return '#FFA500';  // Orange for high points (50-75% of height range)
-   } else if (percentage >= 0.25) {
-       return '#00FF00';  // Green for medium points (25-50% of height range)
-   } else {
-       return '#0000FF';  // Blue for lowest points (0-25% of height range)
-   }
-}
-
-function addLegend(minZ, maxZ, quartile) {
-   const existingLegend = document.querySelector('.legend');
-   if (existingLegend) {
-       existingLegend.remove();
-   }
-
-   const legend = document.createElement('div');
-   legend.className = 'legend';
-   legend.innerHTML = `
-       <h4>Altitude</h4>
-       <div><span style="background: #FF0000"></span>Highest (${(minZ + quartile * 3).toFixed(1)} - ${maxZ.toFixed(1)})</div>
-       <div><span style="background: #FFA500"></span>High (${(minZ + quartile * 2).toFixed(1)} - ${(minZ + quartile * 3).toFixed(1)})</div>
-       <div><span style="background: #00FF00"></span>Medium (${(minZ + quartile).toFixed(1)} - ${(minZ + quartile * 2).toFixed(1)})</div>
-       <div><span style="background: #0000FF"></span>Lowest (${minZ.toFixed(1)} - ${(minZ + quartile).toFixed(1)})</div>
-   `;
-   
-   document.getElementById('map').appendChild(legend);
-}
-
-function resetMap() {
-   if (map) {
-       map.setZoom(3);
-       map.setCenter([-95.7129, 37.0902]); // Center of US
-   }
-}
-
-// Add CSS styles
+// Style CSS
 const style = document.createElement('style');
 style.textContent = `
    .marker {

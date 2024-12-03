@@ -1,136 +1,96 @@
-* {
+/* Corps de la page */
+body {
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-html, body {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-}
-
-.container {
     display: flex;
     height: 100vh;
-    width: 100vw;
+    background: #f8f9fa; /* Couleur de fond claire */
 }
 
-#control-panel {
-    width: 320px;
-    padding: 20px;
-    background: #2c3e50;  /* Fond bleu foncé */
-    border-right: 2px solid #34495e;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-    overflow-y: auto;
-}
-
-.controls-section h3{
-    text-align: center;
-    color: rgb(229, 236, 195)
-}
-
-.panel-header {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #34495e;
-}
-
-.panel-header h2 {
-    color: #ffffff;  /* Texte blanc pour le titre */
-    font-size: 20px;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-
-.panel-description {
-    color: #ecf0f1;  /* Texte gris clair pour la description */
-    font-size: 13px;
-    line-height: 1.4;
-}
-
-#map {
-    flex: 1;
+/* Conteneur principal */
+.container {
+    display: flex;
+    width: 100%;
     height: 100%;
 }
 
-.controls {
-    margin-bottom: 15px;
-    background: #34495e;  /* Fond légèrement plus clair pour les contrôles */
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #3d566e;
+/* Panneau de contrôle */
+#control-panel {
+    width: 20%;
+    height: 100%;
+    background: #2e3b4e;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    border-right: 2px solid white;
 }
 
-button {
-    width: 100%;
-    padding: 8px 12px;
-    margin: 4px 0;
-    background: #3498db;  /* Bleu plus vif pour les boutons */
+/* Titre du panneau */
+#control-panel h2 {
+    background: #4eb6c2; /* Couleur bleue pour l'en-tête */
     color: white;
-    border: 1px solid #2980b9;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-button:hover {
-    background: #2980b9;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.marker {
-    width: 8px;
-    height: 8px;
-    background-color: #ff0000;
-    border-radius: 50%;
-    border: 2px solid #ffffff;
-    cursor: pointer;
-    box-shadow: 0 0 4px rgba(0,0,0,0.2);
-}
-
-.mapboxgl-popup {
-    max-width: 200px;
-}
-
-.mapboxgl-popup-content {
     text-align: center;
-    font-family: inherit;
-    padding: 15px;
-    border-radius: 6px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 15px 0;
+    font-size: 16px;
+    margin: 0;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.legend {
-    background-color: white;
-    border-radius: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    font: 12px/20px inherit;
-    padding: 15px;
-    position: absolute;
-    right: 15px;
-    bottom: 35px;
-    z-index: 1;
-    min-width: 150px;
-    border: 1px solid #e0e4e8;
+/* Sections des contrôles */
+.controls-section {
+    width: 100%; /* Largeur complète */
+    margin-top: 1rem; /* Pas d'espace autour */
+    padding: 0; /* Pas de padding */
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    background: #f9f9f9; /* Fond clair */
+    /*border: 1px solid #cccccc; */
 }
 
-.legend h4 {
-    margin: 0 0 10px;
-    color: #2c3e50;
-    font-weight: 600;
+.controls-section + .controls-section {
+    margin-top: 15px; /* Séparation entre les deux sections */
 }
 
-.legend span {
-    border-radius: 50%;
-    display: inline-block;
-    height: 10px;
-    margin-right: 8px;
-    width: 10px;
-    border: 2px solid white;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+/* Titre de chaque section */
+.controls-section .section-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #bdc3c7; /* Gris clair pour le texte */
+    padding: 10px 15px; /* Espacement interne */
+    background: #394a5a; /* Couleur légèrement plus sombre que le panneau */
+    text-transform: uppercase;
+}
+
+/* Divs dans les sections (avec hover) */
+.controls-section div {
+    padding: 10px 15px; /* Espacement interne */
+    font-size: 14px;
+    color: #ffffff;
+    background: #2e3b4e; /* Couleur de fond par défaut */
+    border-bottom: 1px solid #394a5a; /* Ligne de séparation */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Transition douce */
+}
+
+#btn:hover {
+    background-color: #4eb6c2; /* Couleur de survol */
+    cursor: pointer; /* Curseur cliquable pour effet interactif */
+    color: white;
+}
+
+/* Dernier élément sans bordure */
+.controls-section div:last-child {
+    border-bottom: none;
+}
+
+/* Style pour la carte */
+#map {
+    flex: 1;
+    width: 80%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }

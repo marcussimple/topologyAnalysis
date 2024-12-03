@@ -222,3 +222,85 @@ def execute_query(request):
         'message': 'Only POST method is allowed'
     }, status=405)
 
+@csrf_exempt
+def get_vertex_thalwegs(request):
+    try:
+        data = json.loads(request.body)
+        vertex_id = data.get('vertex_id')
+        
+        print(f"\nChecking class of vertex {vertex_id}...")
+        
+        # 1. Vérifier le type du vertex avec la procédure existante
+        check_query = """
+        CALL custom.checkVertexClass($vertex_id)
+        YIELD vertexId, vertexType
+        RETURN vertexType
+        """
+        
+        check_results = db.cypher_query(check_query, {'vertex_id': vertex_id})[0]
+        vertex_type = check_results[0][0] if check_results else None
+        
+        if vertex_type != 'saddle':  # vérifier si c'est une selle
+            print(f"Vertex {vertex_id} is not a saddle point (type: {vertex_type})")
+            return JsonResponse({
+                'status': 'success',
+                'is_saddle': False,
+                'message': f'This vertex is not a saddle point (type: {vertex_type})'
+            })
+            
+        print(f"Vertex {vertex_id} is a saddle point. Getting thalwegs...")
+        
+        # 2. Utiliser getThalwegPaths pour obtenir les thalwegs
+        thalweg_query = """
+        CALL custom.getThalwegPaths($vertex_id)
+        YIELD saddle_id, thalweg_index, vertex_ids, altitudes
+        MATCH (v:Vertex)
+        WHERE v.id IN vertex_ids
+        WITH thalweg_index, vertex_ids, altitudes,
+             collect({id: v.id, x: v.x, y: v.y, z: v.z}) as vertices
+        RETURN thalweg_index, vertices, altitudes
+        """
+        
+        thalweg_results = db.cypher_query(thalweg_query, {'vertex_id': vertex_id})[0]
+        print(f"Found {len(thalweg_results)} thalwegs")
+        
+        transformed_thalwegs = []
+        for row in thalweg_results:
+            thalweg_index = row[0]
+            vertices = row[1]
+            altitudes = row[2]
+            
+            transformed_vertices = []
+            for vertex in vertices:
+                coords = transform_coordinates(
+                    float(vertex['x']),
+                    float(vertex['y']),
+                    float(vertex['z'])
+                )
+                if coords:
+                    transformed_vertices.append({
+                        'id': vertex['id'],
+                        'longitude': coords['longitude'],
+                        'latitude': coords['latitude'],
+                        'elevation': coords['elevation']
+                    })
+            
+            if len(transformed_vertices) >= 2:
+                transformed_thalwegs.append({
+                    'thalweg_index': thalweg_index,
+                    'vertices': transformed_vertices,
+                    'altitudes': altitudes
+                })
+        
+        return JsonResponse({
+            'status': 'success',
+            'is_saddle': True,
+            'thalwegs': transformed_thalwegs
+        })
+        
+    except Exception as e:
+        print(f"Error in get_vertex_thalwegs: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
