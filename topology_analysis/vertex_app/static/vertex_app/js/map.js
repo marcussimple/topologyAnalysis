@@ -88,8 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
     map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/marcussimple/cm3a49xlx01gq01qkf9w9d0al',  
-        center: [-95.7129, 37.0902],
-        zoom: 3
+        center: [-71.1520, 47.3167],
+        zoom: 10
     });
  
     map.addControl(new mapboxgl.NavigationControl());
