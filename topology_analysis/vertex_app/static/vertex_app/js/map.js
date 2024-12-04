@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
  
     map = new mapboxgl.Map({
         container: 'map',
-        style: 'mapbox://styles/marcussimple/cm3a49xlx01gq01qkf9w9d0al',  
+        style: 'mapbox://styles/marcussimple/cm4aay9ko005801rw3s6gaaua',  
         center: [-71.1520, 47.3167],
         zoom: 10
     });
