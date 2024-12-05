@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from .thalweg_finder import ThalwegFinder
+from .cell_finder import CellFinder
 
 def index(request):
     """
@@ -136,6 +137,67 @@ def get_saddle_thalwegs(request):
             
     except Exception as e:
         print(f"ERREUR dans get_saddle_thalwegs: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+    
+
+@csrf_exempt
+def get_maximum_cell(request):
+    """
+    Get cell boundary for a maximum point
+    """
+    try:
+        data = json.loads(request.body)
+        maximum_id = data.get('maximum_id')
+        print(f"ID du maximum reçu: {maximum_id}")
+
+        uri = "neo4j://localhost:7687"
+        user = ""  # votre user Neo4j
+        password = ""  # votre password Neo4j
+
+        finder = CellFinder(uri, user, password)
+        try:
+            with finder.driver.session() as session:
+                result = finder.find_cell(session, int(maximum_id))
+                if not result:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f'Maximum {maximum_id} non trouvé ou pas de cellule associée'
+                    })
+
+                # Convertir les coordonnées de chaque point de la frontière
+                boundary_coords = []
+                for point in result['boundary']:
+                    coords = transform_coordinates(
+                        float(point['x']),
+                        float(point['y']),
+                        float(point['altitude'])
+                    )
+                    if coords:
+                        boundary_coords.append(coords)
+
+                if not boundary_coords:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Erreur lors de la conversion des coordonnées'
+                    })
+
+                return JsonResponse({
+                    'status': 'success',
+                    'maximum': result['maximum'],
+                    'boundary': boundary_coords,
+                    'statistics': result['statistics']
+                })
+
+        finally:
+            finder.close()
+            
+    except Exception as e:
+        print(f"ERREUR dans get_maximum_cell: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({
