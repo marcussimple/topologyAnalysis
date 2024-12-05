@@ -81,8 +81,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 },
                                 paint: {
                                     'line-color': '#FFFFFF',
-                                    'line-width': 5,
-                                    'line-opacity': 0.6,
+                                    'line-width': 7,
+                                    'line-opacity': 0.8,
                                     'line-blur': 2
                                 }
                             });
@@ -110,11 +110,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 new mapboxgl.Popup()
                                     .setLngLat(e.lngLat)
                                     .setHTML(`
-                                        <h3>Thalweg Info</h3>
-                                        <p>De: ${properties.start}</p>
-                                        <p>À: ${properties.end}</p>
-                                        <p>Altitude départ: ${properties.elevation_start.toFixed(2)}m</p>
-                                        <p>Altitude arrivée: ${properties.elevation_end.toFixed(2)}m</p>
+                                        <div style="text-align: left; width: 180px; line-height: 1.2;">
+                                            <h3 style="margin: 0 0 5px 0;">Thalweg Info</h3>
+                                            <p style="margin: 2px 0;">Point de départ: ${properties.start}</p>
+                                            <p style="margin: 2px 0;">Point d'arrivé: ${properties.end}</p> 
+                                            <p style="margin: 2px 0;">Altitude départ: ${properties.elevation_start.toFixed(2)}m</p>
+                                            <p style="margin: 2px 0;">Altitude arrivée: ${properties.elevation_end.toFixed(2)}m</p>
+                                            <p style="margin: 2px 0;">Pente: ${(properties.slope * 100).toFixed(2)}%</p>
+                                        </div>
                                     `)
                                     .addTo(map);
                             });
