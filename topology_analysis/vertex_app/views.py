@@ -204,3 +204,35 @@ def get_maximum_cell(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
+    
+
+
+@csrf_exempt
+def get_neighbor_maximums(request):
+    try:
+        data = json.loads(request.body)
+        maximum_id = data.get('maximum_id')
+
+        uri = "neo4j://localhost:7687"
+        user = ""
+        password = ""
+
+        finder = CellFinder(uri, user, password)
+        try:
+            with finder.driver.session() as session:
+                neighbor_maximums = finder.get_neighbor_maximums(session, int(maximum_id))
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'neighbor_maximums': neighbor_maximums
+                })
+        finally:
+            finder.close()
+    except Exception as e:
+        print(f"ERREUR dans get_neighbor_maximums: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)

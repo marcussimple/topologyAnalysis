@@ -7,4 +7,5 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('get-saddle-thalwegs/', views.get_saddle_thalwegs, name='get_saddle_thalwegs'),
     path('get-maximum-cell/', views.get_maximum_cell, name='get-maximum-cell'),
+    path('get-neighbor-maximums/', views.get_neighbor_maximums, name='get_neighbor_maximums'),
 ]
