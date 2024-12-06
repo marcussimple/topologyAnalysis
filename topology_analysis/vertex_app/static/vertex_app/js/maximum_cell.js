@@ -218,8 +218,8 @@ function fetchCellData(maximumId) {
             'type': 'fill',
             'source': 'cell-boundary',
             'paint': {
-                'fill-color': '#0080ff',
-                'fill-opacity': 0.2
+                'fill-color': '#2FFB28',
+                'fill-opacity': 0.3
             }
         });
 
@@ -229,7 +229,7 @@ function fetchCellData(maximumId) {
             'type': 'line',
             'source': 'cell-boundary',
             'paint': {
-                'line-color': '#0080ff',
+                'line-color': '#2FFB28',
                 'line-width': 2
             }
         });
