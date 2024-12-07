@@ -65,22 +65,18 @@ class CellFinder:
     
 
     def get_neighbor_maximums(self, session, maximum_id):
-        """
-        Trouve tous les maximums voisins d'une cellule donnée.
-        """
         query = """
-        MATCH (c:Cell {maximum_id: $maximum_id})-[:CELL_BOUNDARY]->(boundary:Vertex)
-        MATCH (boundary)<-[:CELL_BOUNDARY]-(neighbor_cell:Cell)
-        WHERE neighbor_cell.maximum_id <> $maximum_id
-        WITH DISTINCT neighbor_cell.maximum_id as neighbor_maximum_id
+        MATCH (c:Cell {maximum_id: $maximum_id})-[:CELL_BOUNDARY]->(v1:Vertex)-[:THALWEG_PATH]-(v2:Vertex)<-[:CELL_BOUNDARY]-(c)
+        MATCH (v1)<-[:CELL_BOUNDARY]-(c2:Cell)
+        WHERE c2.maximum_id <> $maximum_id AND (v2)<-[:CELL_BOUNDARY]-(c2)
+        WITH DISTINCT c2.maximum_id as neighbor_maximum_id
         MATCH (max:Vertex {id: neighbor_maximum_id})
-        RETURN neighbor_maximum_id as id, max.x as x, max.y as y, max.z as z, 
-            max.typevertex as type
+        RETURN neighbor_maximum_id as id, max.x as x, max.y as y, max.z as z, max.typevertex as type
         """
         results = session.run(query, maximum_id=maximum_id)
         return [dict(record) for record in results]
     
-    
+
 
 def main():
     uri = "neo4j://localhost:7687"

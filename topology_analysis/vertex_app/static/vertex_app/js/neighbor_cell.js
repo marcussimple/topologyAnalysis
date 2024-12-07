@@ -78,14 +78,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Couleurs pour les différentes cellules
 const cellColors = [
-    '#2FFB28',  // Vert pour la cellule principale
+    '#FFFFFF',  // Blanc pour la cellule principale
     '#FF6B6B',  // Rouge
     '#4ECDC4',  // Turquoise
     '#FFD93D',  // Jaune
     '#95A5A6',  // Gris
     '#FF8C42',  // Orange
     '#6C5B7B',  // Violet
-    '#45B7D1'   // Bleu clair
+    '#45B7D1'   // Bleu
 ];
 
 function fetchNeighborCells(maximumId) {
