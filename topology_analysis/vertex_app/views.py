@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from .thalweg_finder import ThalwegFinder
 from .cell_finder import CellFinder
+from .path_finder import PathFinder
 
 def index(request):
     """
@@ -230,6 +231,63 @@ def get_neighbor_maximums(request):
             finder.close()
     except Exception as e:
         print(f"ERREUR dans get_neighbor_maximums: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+    
+
+@csrf_exempt
+def get_shortest_path(request):
+    try:
+        data = json.loads(request.body)
+        start_id = data.get('start_id')
+        end_id = data.get('end_id')
+
+        if not start_id or not end_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Les IDs de début et de fin sont requis'
+            })
+
+        uri = "neo4j://localhost:7687"
+        user = ""
+        password = ""
+
+        path_finder = PathFinder(uri, user, password)
+        try:
+            with path_finder.driver.session() as session:
+                path = path_finder.find_shortest_path(session, int(start_id), int(end_id))
+                
+                if not path:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Aucun chemin trouvé'
+                    })
+
+                # Transformer les coordonnées
+                path_coords = []
+                for point in path:
+                    coords = transform_coordinates(
+                        float(point['x']),
+                        float(point['y']),
+                        float(point['z'])
+                    )
+                    if coords:
+                        path_coords.append(coords)
+
+                return JsonResponse({
+                    'status': 'success',
+                    'path': path_coords
+                })
+
+        finally:
+            path_finder.close()
+            
+    except Exception as e:
+        print(f"ERREUR dans get_shortest_path: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({
