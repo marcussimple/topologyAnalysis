@@ -98,3 +98,40 @@ body {
     margin: 0;
     padding: 0;
 }
+
+.legend {
+    
+    position: relative;
+    margin-top: 0px;
+    padding: 10px 15px;
+    font-size: 14px;
+    color: #ffffff !important;  /* Force la couleur blanche */
+    background: #2e3b4e;
+    display: block;
+    text-align: center;  /* Centre le texte */
+}
+
+.legend u {
+    color: #ffffff;  /* Texte blanc */
+    text-decoration: underline;
+    display: inline-block;
+}
+
+.legend:hover::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    width: 150px;  /* Réduit la largeur */
+    height: 125px;  /* Réduit la hauteur proportionnellement */
+    background-image: url('../images/legende.png');
+    background-size: cover;  /* Change contain à cover */
+    background-repeat: no-repeat;
+    background-position: center;  /* Centre l'image */
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    margin-bottom: 10px;
+    z-index: 1000;
+}

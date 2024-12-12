@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyse du Terrain</title>
+    <title>Terramesh</title>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
     <link rel="stylesheet" href="{% static 'vertex_app/css/style.css' %}">
@@ -14,7 +14,7 @@
     <div class="container">
         <!-- Panneau de contrôle -->
         <div id="control-panel">
-            <h2>Analyse du Terrain</h2>
+            <h2>Terramesh</h2>
 
             <div class="controls-section">
                 <div class="section-title">Requêtes de validation</div>
@@ -32,6 +32,9 @@
                 <div id="btn">Cellule d'un sommet maximum</div>   
                 <div id="btn">Cellules voisines d'une cellule</div>
                 <div id="btn">Z</div>
+            </div>
+            <div class="legend">
+                <u>Légende</u>
             </div>
         </div>
 
