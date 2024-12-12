@@ -5,6 +5,15 @@ import json
 from .thalweg_finder import ThalwegFinder
 from .cell_finder import CellFinder
 from .path_finder import PathFinder
+from neo4j import GraphDatabase
+
+
+# Database connection settings
+uri = "neo4j://localhost:7687"
+user = ""  # votre username Neo4j
+password = ""  # votre password Neo4j
+
+
 
 def index(request):
     """
@@ -288,6 +297,49 @@ def get_shortest_path(request):
             
     except Exception as e:
         print(f"ERREUR dans get_shortest_path: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+    
+@csrf_exempt
+def get_thalweg_slope(request):
+    try:
+        print("1. Début de get_thalweg_slope")
+        data = json.loads(request.body)
+        thalweg_id = data.get('thalweg_id')
+        print(f"2. ID du thalweg reçu: {thalweg_id}")
+
+        with GraphDatabase.driver(uri, auth=(user, password)) as driver:
+            with driver.session() as session:
+                query = """
+                MATCH path = (v1:Vertex)-[r:THALWEG_PATH*]->(v2:Vertex)
+                WHERE r[0].tlwg_id = $thalweg_id
+                WITH DISTINCT nodes(path) as points
+                UNWIND range(0, size(points)-2) as i
+                WITH DISTINCT points[i] as start, points[i+1] as end
+                RETURN DISTINCT
+                    start.id as start_id,
+                    end.id as end_id,
+                    100 * (end.z - start.z) / 
+                    sqrt((end.x - start.x)^2 + (end.y - start.y)^2) as slope,
+                    sqrt((end.x - start.x)^2 + (end.y - start.y)^2) as distance,
+                    end.z - start.z as elevation_diff
+                ORDER BY slope DESC
+                """
+                print("3. Exécution de la requête Cypher")
+                results = session.run(query, thalweg_id=thalweg_id)
+                slope_data = [dict(record) for record in results]
+                print(f"4. Résultats: {slope_data}")
+
+                return JsonResponse({
+                    'status': 'success',
+                    'results': slope_data
+                })
+    except Exception as e:
+        print(f"ERREUR dans get_thalweg_slope: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({

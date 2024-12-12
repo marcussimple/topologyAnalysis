@@ -2,50 +2,116 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terramesh</title>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
-    <link rel="stylesheet" href="{% static 'vertex_app/css/style.css' %}">
-    {% csrf_token %}
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>TerraMesh</title>
+   <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
+   <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+   <link rel="stylesheet" href="{% static 'vertex_app/css/style.css' %}">
+    
+   {% csrf_token %}
 </head>
 <body>
-    <div class="container">
-        <!-- Panneau de contrôle -->
-        <div id="control-panel">
-            <h2>Terramesh</h2>
+   <div class="container">
+       <!-- Section résultats pour validations -->
+       <div id="validation-results" style="display: none;">
+           <!-- Pente descendante -->
+           <div id="slope-results" class="result-section" style="display: none;">
+               <div class="result-header">
+                   <h3>Résultats de la pente descendante</h3>
+                   <span class="close-results">&times;</span>
+               </div>
+               <table class="results-table">
+                   <thead>
+                       <tr>
+                           <th>Point de départ</th>
+                           <th>Point d'arrivée</th>
+                           <th>Pente (%)</th>
+                           <th>Distance (m)</th>
+                           <th>Différence d'altitude (m)</th>
+                       </tr>
+                   </thead>
+                   <tbody></tbody>
+               </table>
+           </div>
 
-            <div class="controls-section">
-                <div class="section-title">Requêtes de validation</div>
-                <div id="btn">Pente descandante d'un thalweg</div>
-                <div id="btn">Sommet maximum par cellule</div>
-                <div id="btn">Cellules voisines d'une cellule</div>
-                <div id="btn">D</div>
-                <div id="btn">E</div>
+           <!-- Maximum par cellule -->
+           <div id="cell-maximum-results" class="result-section" style="display: none;">
+               <div class="result-header">
+                   <h3>Résultats des maximums par cellule</h3>
+                   <span class="close-results">&times;</span>
+               </div>
+               <table class="results-table">
+                   <thead>
+                       <tr>
+                           <th>Cellule ID</th>
+                           <th>Maximum ID</th>
+                           <th>Altitude</th>
+                       </tr>
+                   </thead>
+                   <tbody></tbody>
+               </table>
+           </div>
+
+           <!-- Cellules voisines -->
+           <div id="neighbor-validation-results" class="result-section" style="display: none;">
+               <div class="result-header">
+                   <h3>Validation des cellules voisines</h3>
+                   <span class="close-results">&times;</span>
+               </div>
+               <table class="results-table">
+                   <thead>
+                       <tr>
+                           <th>Cellule</th>
+                           <th>Voisin</th>
+                           <th>Thalwegs partagés</th>
+                       </tr>
+                   </thead>
+                   <tbody></tbody>
+               </table>
+           </div>
+       </div>
+
+       <!-- Panneau de contrôle -->
+       <div id="control-panel">
+            <div id="appname">
+                <h2>TerraMesh</h2>
+                <div id="version">Version 1.0</div>
             </div>
+        
+        
+            
+           <div class="controls-section">
+               <div class="section-title">Requêtes de validation</div>
+               <div id="btn">Pente descandante d'un thalweg</div>
+               <div id="btn">Sommet maximum par cellule</div>
+               <div id="btn">Cellules voisines d'une cellule</div>
 
-            <div class="controls-section">
-                <div class="section-title">Requêtes d'analyse</div>
-                <div id="btn">Thalweg à partir d'une selle</div>
-                <div id="btn">Plus courte chemin entre deux vertex</div>
-                <div id="btn">Cellule d'un sommet maximum</div>   
-                <div id="btn">Cellules voisines d'une cellule</div>
-                <div id="btn">Z</div>
-            </div>
-            <div class="legend">
-                <u>Légende</u>
-            </div>
-        </div>
+           </div>
 
-        <!-- Carte -->
-        <div id="map"></div>
-    </div>
+           <div class="controls-section">
+               <div class="section-title">Requêtes d'analyse</div>
+               <div id="btn">Thalweg à partir d'une selle</div>
+               <div id="btn">Plus courte chemin entre deux vertex</div>
+               <div id="btn">Cellule d'un sommet maximum</div>   
+               <div id="btn">Cellules voisines d'une cellule</div>
+              
+           </div>
+           <div class="legend">
+               <u>Légende</u>
+           </div>
+       </div>
 
-    <script src="{% static 'vertex_app/js/map.js' %}"></script>
-    <script src="{% static 'vertex_app/js/saddle_thalwegs.js' %}"></script>
-    <script src="{% static 'vertex_app/js/maximum_cell.js' %}"></script>
-    <script src="{% static 'vertex_app/js/neighbor_cell.js' %}"></script>
-    <script src="{% static 'vertex_app/js/shortest_path.js' %}"></script>
+       <!-- Carte -->
+       <div id="map"></div>
+   </div>
+
+   <!-- Scripts -->
+   <script src="{% static 'vertex_app/js/map.js' %}"></script>
+   <script src="{% static 'vertex_app/js/saddle_thalwegs.js' %}"></script>
+   <script src="{% static 'vertex_app/js/maximum_cell.js' %}"></script>
+   <script src="{% static 'vertex_app/js/neighbor_cell.js' %}"></script>
+   <script src="{% static 'vertex_app/js/shortest_path.js' %}"></script>
+   <script src="{% static 'vertex_app/js/thalweg_slope.js' %}"></script>
 </body>
 </html>

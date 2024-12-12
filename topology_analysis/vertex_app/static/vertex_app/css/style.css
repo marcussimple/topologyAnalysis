@@ -35,7 +35,7 @@ body {
     font-size: 16px;
     margin: 0;
     font-weight: bold;
-    text-transform: uppercase;
+    /*text-transform: uppercase;*/
     letter-spacing: 1px;
 }
 
@@ -62,7 +62,7 @@ body {
     color: #bdc3c7; /* Gris clair pour le texte */
     padding: 10px 15px; /* Espacement interne */
     background: #394a5a; /* Couleur légèrement plus sombre que le panneau */
-    text-transform: uppercase;
+    /*text-transform: uppercase;*/
 }
 
 /* Divs dans les sections (avec hover) */
@@ -102,8 +102,9 @@ body {
 .legend {
     
     position: relative;
+    padding-top: 15px;
     margin-top: 0px;
-    padding: 10px 15px;
+    padding: 30px 15px; 
     font-size: 14px;
     color: #ffffff !important;  /* Force la couleur blanche */
     background: #2e3b4e;
@@ -135,3 +136,96 @@ body {
     margin-bottom: 10px;
     z-index: 1000;
 }
+
+/* Styles pour la section de résultats */
+#validation-results {
+    width: 100%;
+    background-color: #2e3b4e;
+    padding: 15px;
+    margin-bottom: 15px;
+ }
+ 
+ .result-section {
+    margin-bottom: 15px;
+ }
+ 
+ .result-section h3 {
+    color: #ffffff;
+    font-size: 14px;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #394a5a;
+ }
+ 
+ .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    font-size: 13px;
+ }
+ 
+ .results-table th {
+    background-color: #4eb6c2;
+    color: #ffffff;
+    text-align: left;
+    padding: 8px;
+    font-weight: bold;
+ }
+ 
+ .results-table td {
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    color: #333333;
+ }
+ 
+ .results-table tr:nth-child(even) {
+    background-color: #f5f5f5;
+ }
+ 
+ .results-table tr:hover {
+    background-color: #f0f0f0;
+ }
+
+ .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-results {
+    cursor: pointer;
+    font-size: 20px;
+    color: #ffffff;
+}
+
+.close-results:hover {
+    color: #ccc;
+}
+
+#appname {
+    font-size: 20px;
+    text-align: center;
+}
+
+#appname h2 {
+    background: #4eb6c2; /* Background color */
+    color: #394a5a;;
+    padding: 10px 0;
+    margin: 0;
+    font-size: 32px; /* Increased font size */
+    font-weight: bold; /* Optional: make it bolder */
+    line-height: 1.2; /* Adjust line-height for better spacing */
+}
+
+#version {
+    background: #4eb6c2; /* Same background color */
+    color: white;
+    font-size: 0.8rem;
+    padding: 5px 0;
+    margin-top: -10px; /* Adjust vertical spacing */
+    display: block;
+}
+
+
+
+
